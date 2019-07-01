@@ -6,6 +6,8 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"strconv"
+	"strings"
 
 	"github.com/kataras/iris"
 )
@@ -29,60 +31,40 @@ func (q *Queue) Read() []*Queue {
 		log.Fatal(err)
 	}
 	defer file.Close()
+
 	scanner := bufio.NewScanner(file)
+	var requests []*Queue
+	request := &Queue{}
+	count := 0
+
 	for scanner.Scan() {
+		count++
 		if scanner.Text() == "" {
-			fmt.Println("Out")
+			count = 0
 			continue
 		}
-		fmt.Println("In:", scanner.Text())
-	}
-	return MockQueue()
-}
+		switch count {
+		case 1:
+			request.Domain = scanner.Text()
+		case 2:
+			val := strings.Split(scanner.Text(), ":")[1]
+			weight, _ := strconv.Atoi(val)
+			request.Weight = weight
+		case 3:
+			val := strings.Split(scanner.Text(), ":")[1]
+			priority, _ := strconv.Atoi(val)
+			request.Priority = priority
 
-// MockQueue is
-func MockQueue() []*Queue {
-	return []*Queue{
-		{
-			Domain:   "alpha",
-			Weight:   5,
-			Priority: 5,
-		},
-		{
-			Domain:   "beta",
-			Weight:   1,
-			Priority: 2,
-		},
-		{
-			Domain:   "omega",
-			Weight:   3,
-			Priority: 4,
-		},
-		{
-			Domain:   "alpha",
-			Weight:   4,
-			Priority: 1,
-		},
-		{
-			Domain:   "beta",
-			Weight:   5,
-			Priority: 1,
-		},
-		{
-			Domain:   "alpha",
-			Weight:   1,
-			Priority: 6,
-		},
+			requests = append(requests, request)
+			request = &Queue{}
+		}
 	}
+
+	return requests
 }
 
 // Q empty Queue
 var Q []string
-
-// Deprecated InitQueue s
-// func InitQueue() {
-// 	Q = append(Q, &Queue{})
-// }
 
 // ProxyMiddleware extracts the domain from the header
 func ProxyMiddleware(c iris.Context) {
