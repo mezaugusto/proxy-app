@@ -1,7 +1,11 @@
 package middleware
 
 import (
+	"bufio"
 	"fmt"
+	"log"
+	"os"
+	"path/filepath"
 
 	"github.com/kataras/iris"
 )
@@ -19,6 +23,20 @@ type Repository interface {
 }
 
 func (q *Queue) Read() []*Queue {
+	path, _ := filepath.Abs("")
+	file, err := os.Open(path + "/api/middleware/domain.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		if scanner.Text() == "" {
+			fmt.Println("Out")
+			continue
+		}
+		fmt.Println("In:", scanner.Text())
+	}
 	return MockQueue()
 }
 
@@ -59,16 +77,20 @@ func MockQueue() []*Queue {
 }
 
 // Q empty Queue
-var Q []*Queue
+var Q []string
 
-// InitQueue s
-func InitQueue() {
-	Q = append(Q, &Queue{})
-}
+// Deprecated InitQueue s
+// func InitQueue() {
+// 	Q = append(Q, &Queue{})
+// }
 
 // ProxyMiddleware extracts the domain from the header
 func ProxyMiddleware(c iris.Context) {
 	domain := c.GetHeader("domain")
+	if len(domain) == 0 {
+		c.JSON(iris.Map{"status": 400, "result": "error"})
+		return
+	}
 	var repo Repository
 	repo = &Queue{}
 	fmt.Println("Header Domain:", domain)
@@ -76,5 +98,6 @@ func ProxyMiddleware(c iris.Context) {
 		fmt.Println("Source Domain:", row.Domain)
 		// TODO: Priorization algorithm
 	}
+	Q = append(Q, domain)
 	c.Next()
 }
