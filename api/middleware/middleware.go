@@ -66,6 +66,15 @@ func (q *Queue) Read() []*Queue {
 // Q empty Queue
 var Q []string
 
+func getPriority(w int, p int) string {
+	if w >= 5 && p >= 5 {
+		return "High"
+	} else if w < 5 && p < 5 {
+		return "Low"
+	}
+	return "Medium"
+}
+
 // ProxyMiddleware extracts the domain from the header
 func ProxyMiddleware(c iris.Context) {
 	domain := c.GetHeader("domain")
@@ -73,12 +82,15 @@ func ProxyMiddleware(c iris.Context) {
 		c.JSON(iris.Map{"status": 400, "result": "error"})
 		return
 	}
+	fmt.Println("Header Domain:", domain)
+
 	var repo Repository
 	repo = &Queue{}
-	fmt.Println("Header Domain:", domain)
 	for _, row := range repo.Read() {
 		fmt.Println("Source Domain:", row.Domain)
-		// TODO: Priorization algorithm
+		if domain == row.Domain {
+			fmt.Println(getPriority(row.Weight, row.Priority))
+		}
 	}
 	Q = append(Q, domain)
 	c.Next()

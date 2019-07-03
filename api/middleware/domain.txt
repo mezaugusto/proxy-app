@@ -1,6 +1,6 @@
 alpha
-weight:3
-priority:1
+weight:5
+priority:5
 
 omega
 weight:5
