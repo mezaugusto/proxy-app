@@ -66,13 +66,27 @@ func (q *Queue) Read() []*Queue {
 // Q empty Queue
 var Q []string
 
-func getPriority(w int, p int) string {
-	if w >= 5 && p >= 5 {
-		return "High"
-	} else if w < 5 && p < 5 {
-		return "Low"
+var computedPriorities map[string]int
+
+func getPriority(domain string) int {
+	var repo Repository
+	repo = &Queue{}
+	priority := 0
+
+	for _, row := range repo.Read() {
+		if domain == row.Domain {
+			if row.Weight >= 5 && row.Priority >= 5 {
+				priority = 1
+			} else if row.Weight < 5 && row.Priority < 5 {
+				priority = 3
+			} else {
+				priority = 2
+			}
+			break
+		}
 	}
-	return "Medium"
+	computedPriorities[domain] = priority
+	return priority
 }
 
 // ProxyMiddleware extracts the domain from the header
@@ -82,16 +96,34 @@ func ProxyMiddleware(c iris.Context) {
 		c.JSON(iris.Map{"status": 400, "result": "error"})
 		return
 	}
-	fmt.Println("Header Domain:", domain)
+	fmt.Println("Domain:", domain)
 
-	var repo Repository
-	repo = &Queue{}
-	for _, row := range repo.Read() {
-		fmt.Println("Source Domain:", row.Domain)
-		if domain == row.Domain {
-			fmt.Println(getPriority(row.Weight, row.Priority))
+	if computedPriorities == nil {
+		computedPriorities = make(map[string]int)
+	}
+
+	var priority int
+	if val, ok := computedPriorities[domain]; ok {
+		priority = val
+	}
+	priority = getPriority(domain)
+
+	if priority == 0 {
+		c.JSON(iris.Map{"status": 400, "result": "domain not valid"})
+		return
+	}
+
+	for i, iDomain := range Q {
+		iPriority := computedPriorities[iDomain]
+		if priority <= iPriority {
+			Q = append(Q, "")
+			copy(Q[i+1:], Q[i:])
+			Q[i] = domain
+			c.Next()
+			return
 		}
 	}
+
 	Q = append(Q, domain)
 	c.Next()
 }

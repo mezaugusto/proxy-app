@@ -57,7 +57,7 @@ func TestAlgorithmn(t *testing.T) {
 		{Domain: "alpha", Output: `["alpha"]`},
 		{Domain: "alpha", Output: `["alpha","alpha"]`},
 		{Domain: "omega", Output: `["alpha","alpha","omega"]`},
-		{Domain: "beta", Output: `["alpha","alpha","omega","beta"]`},
+		{Domain: "beta", Output: `["alpha","alpha","beta","omega"]`},
 		{Domain: "", Output: "error"},
 	}
 
